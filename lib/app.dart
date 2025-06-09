@@ -1,150 +1,148 @@
+import '/flutter_flow/flutter_flow_charts.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 
-void main() => runApp(const ECGApp());
+class HomePageWidget extends StatefulWidget {
+  const HomePageWidget({super.key});
 
-class ECGApp extends StatelessWidget {
-  const ECGApp({super.key});
+  static String routeName = 'HomePage';
+  static String routePath = '/homePage';
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ECG App',
-      theme: ThemeData(
-        primarySwatch: Colors.red,
-      ),
-      home: const UserFormScreen(),
-    );
+  State<HomePageWidget> createState() => _HomePageWidgetState();
+}
+
+class _HomePageWidgetState extends State<HomePageWidget> {
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+  List<double> ecgSignal = [];
+  List<double> displayedData = [];
+  List<double> timestamps = [];
+  int currentIndex = 0;
+  double timeCounter = 0.0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadECGData();
   }
-}
 
-class UserFormScreen extends StatefulWidget {
-  const UserFormScreen({super.key});
+  Future<void> _loadECGData() async {
+    final csvString = await rootBundle.loadString('assets/sample.csv');
+    final lines = const LineSplitter().convert(csvString);
+
+    setState(() {
+      ecgSignal = lines.map((line) => double.tryParse(line) ?? 0.0).toList();
+    });
+
+    _startStreaming();
+  }
+
+  void _startStreaming() {
+    const sampleRate = 250; // Hz
+    final interval = Duration(milliseconds: (1000 / sampleRate).round());
+
+    _timer = Timer.periodic(interval, (timer) {
+      if (currentIndex >= ecgSignal.length) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        displayedData.add(ecgSignal[currentIndex]);
+        timestamps.add(timeCounter);
+        timeCounter += 1 / 250;
+        currentIndex++;
+      });
+    });
+  }
 
   @override
-  State<UserFormScreen> createState() => _UserFormScreenState();
-}
-
-class _UserFormScreenState extends State<UserFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  String name = '';
-  int age = 0;
-  bool hasHeartDisease = false;
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Datos del usuario')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        appBar: AppBar(
+          title: Text(
+            'ECG en Tiempo Real',
+            style: FlutterFlowTheme.of(context).headlineMedium.override(
+                  font: GoogleFonts.interTight(),
+                  color: Colors.white,
+                  fontSize: 22,
+                ),
+          ),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+          centerTitle: true,
+        ),
+        body: SafeArea(
           child: Column(
             children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                onSaved: (value) => name = value ?? '',
-                validator: (value) =>
-                    value!.isEmpty ? 'Por favor ingresa tu nombre' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Edad'),
-                keyboardType: TextInputType.number,
-                onSaved: (value) => age = int.tryParse(value ?? '0') ?? 0,
-                validator: (value) =>
-                    value!.isEmpty ? 'Por favor ingresa tu edad' : null,
-              ),
-              SwitchListTile(
-                title: const Text('¿Tienes enfermedad cardíaca?'),
-                value: hasHeartDisease,
-                onChanged: (value) {
-                  setState(() {
-                    hasHeartDisease = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                child: const Text('Ver ECG'),
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _formKey.currentState!.save();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ECGScreen(
-                          name: name,
-                          age: age,
-                          hasHeartDisease: hasHeartDisease,
-                        ),
+              Container(
+                width: double.infinity,
+                height: 250,
+                padding: EdgeInsets.all(16),
+                child: FlutterFlowLineChart(
+                  data: [
+                    FFLineChartData(
+                      xData: timestamps,
+                      yData: displayedData,
+                      settings: LineChartBarData(
+                        color: Color(0xFF0057B8),
+                        barWidth: 2,
+                        isCurved: false,
+                        dotData: FlDotData(show: false),
+                        belowBarData: BarAreaData(show: false),
                       ),
-                    );
-                  }
-                },
+                    )
+                  ],
+                  chartStylingInfo: ChartStylingInfo(
+                    backgroundColor: FlutterFlowTheme.of(context)
+                        .secondaryBackground,
+                    showGrid: true,
+                    showBorder: false,
+                  ),
+                  axisBounds: AxisBounds(),
+                  xAxisLabelInfo: AxisLabelInfo(
+                    reservedSize: 32,
+                    labelTextStyle: TextStyle(fontSize: 10),
+                  ),
+                  yAxisLabelInfo: AxisLabelInfo(
+                    reservedSize: 40,
+                    labelTextStyle: TextStyle(fontSize: 10),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  currentIndex < ecgSignal.length
+                      ? 'Muestra: ${displayedData.last.toStringAsFixed(2)} mV'
+                      : 'Señal completada',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        font: GoogleFonts.inter(),
+                        fontSize: 18,
+                      ),
+                ),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-}
-
-class ECGScreen extends StatelessWidget {
-  final String name;
-  final int age;
-  final bool hasHeartDisease;
-
-  const ECGScreen({
-    super.key,
-    required this.name,
-    required this.age,
-    required this.hasHeartDisease,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Resultados ECG')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text('Paciente: $name, Edad: $age'),
-            Text('Enfermedad cardíaca: ${hasHeartDisease ? 'Sí' : 'No'}'),
-            const SizedBox(height: 24),
-            const Text('Simulación de ECG', style: TextStyle(fontSize: 20)),
-            const SizedBox(height: 16),
-            Expanded(
-              child: LineChart(
-                LineChartData(
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: _generateMockECG(),
-                      isCurved: true,
-                      barWidth: 2,
-                      color: Colors.red,
-                      dotData: FlDotData(show: false),
-                    )
-                  ],
-                  titlesData: FlTitlesData(show: false),
-                  gridData: FlGridData(show: false),
-                  borderData: FlBorderData(show: false),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<FlSpot> _generateMockECG() {
-    final points = <FlSpot>[];
-    for (double x = 0; x < 6.28; x += 0.1) {
-      double y = (x * 2).sin() + 0.2 * (x * 10).sin(); // simulación de ECG
-      points.add(FlSpot(x, y));
-    }
-    return points;
   }
 }
