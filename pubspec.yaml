@@ -1,0 +1,21 @@
+name: tu_app_flutter
+description: App de ECG en Flutter con CSV local.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
+  fl_chart: ^0.64.0
+  google_fonts: ^6.1.0
+  
+  # Dependencias faltantes para el código FlutterFlow
+  cupertino_icons: ^1.0.2
+  
+flutter:
+  uses-material-design: true
+  assets:
+    - assets\sample.csv
