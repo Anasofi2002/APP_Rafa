@@ -79,7 +79,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         appBar: AppBar(
           title: Text(
-            'ECG en Tiempo Real',
+            'ECG transmitido Tiempo Real',
             style: FlutterFlowTheme.of(context).headlineMedium.override(
                   font: GoogleFonts.interTight(),
                   color: Colors.white,
