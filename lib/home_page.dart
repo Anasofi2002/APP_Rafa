@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
 
       _startStreaming();
     } catch (e) {
-      print('Error cargando datos: $e');
+      print('Error cargando señal: $e');
     }
   }
 

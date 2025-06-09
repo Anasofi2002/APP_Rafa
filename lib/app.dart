@@ -102,7 +102,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       xData: timestamps,
                       yData: displayedData,
                       settings: LineChartBarData(
-                        color: Color(0xFF0057B8),
+                        color: Color.fromARGB(255, 43, 75, 111),
                         barWidth: 2,
                         isCurved: false,
                         dotData: FlDotData(show: false),
